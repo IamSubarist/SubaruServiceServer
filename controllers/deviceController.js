@@ -1,21 +1,66 @@
 const { Device, DeviceInfo } = require("../models/models");
+const { Op } = require("sequelize");
 const uuid = require("uuid");
 const path = require("path");
 const ApiError = require("../errors/ApiError");
 
 class DeviceController {
+  async search(req, res, next) {
+    const { query } = req.query;
+
+    try {
+      const devices = await Device.findAll({
+        where: {
+          name: {
+            [Op.iLike]: `%${query}%`, // Ищем частичное совпадение с именем товара (регистронезависимый поиск)
+          },
+        },
+      });
+
+      return res.json(devices);
+    } catch (error) {
+      return next(ApiError.internalServerError("Failed to perform search."));
+    }
+  }
+
   async create(req, res, next) {
     try {
-      const { name, price, brandId, typeId, info } = req.body;
-      const { img } = req.files;
-      let fileName = uuid.v4() + ".jpg";
-      img.mv(path.resolve(__dirname, "..", "static", fileName));
-      const device = await Device.create({
+      let {
         name,
+        description,
         price,
+        oldPrice,
         brandId,
         typeId,
-        img: fileName,
+        info,
+        available,
+      } = req.body;
+      const { img } = req.files;
+      console.log(req.files);
+
+      const fileNames = [];
+
+      if (Array.isArray(img)) {
+        for (const image of img) {
+          const fileName = uuid.v4() + path.extname(image.name);
+          await image.mv(path.resolve(__dirname, "..", "static", fileName));
+          fileNames.push(fileName);
+        }
+      } else {
+        const fileName = uuid.v4() + path.extname(img.name);
+        await img.mv(path.resolve(__dirname, "..", "static", fileName));
+        fileNames.push(fileName);
+      }
+
+      const device = await Device.create({
+        name,
+        description,
+        price,
+        oldPrice,
+        brandId,
+        typeId,
+        available,
+        img: fileNames,
       });
       if (info) {
         info = JSON.parse(info);
@@ -34,31 +79,47 @@ class DeviceController {
     }
   }
 
+  // ...
+
   async getAll(req, res) {
     let { brandId, typeId, limit, page } = req.query;
     let devices;
-    limit = limit || 4
-    page = page || 1
-    let offset = page * limit - limit
+    limit = limit || 8;
+    page = page || 1;
+    let offset = page * limit - limit;
     if (!brandId && !typeId) {
-      devices = await Device.findAndCountAll({limit, offset});
-      return res.json(devices);
+      const totalCount = await Device.count();
+      const totalPages = Math.ceil(totalCount / limit);
+      devices = await Device.findAll({ limit, offset });
+      return res.json({ rows: devices, totalPages });
     }
     if (brandId && !typeId) {
-      devices = await Device.findAndCountAll({ where: { brandId }, limit, offset });
-      return res.json(devices);
+      const totalCount = await Device.count({ where: { brandId } });
+      const totalPages = Math.ceil(totalCount / limit);
+      devices = await Device.findAll({ where: { brandId }, limit, offset });
+      return res.json({ rows: devices, totalPages });
     }
     if (!brandId && typeId) {
-      devices = await Device.findAndCountAll({ where: { typeId }, limit, offset });
-      return res.json(devices);
+      const totalCount = await Device.count({ where: { typeId } });
+      const totalPages = Math.ceil(totalCount / limit);
+      devices = await Device.findAll({ where: { typeId }, limit, offset });
+      return res.json({ rows: devices, totalPages });
     }
     if (brandId && typeId) {
-      devices = await Device.findAndCountAll({ where: { brandId, typeId }, limit, offset });
-      return res.json(devices);
+      const totalCount = await Device.count({ where: { brandId, typeId } });
+      const totalPages = Math.ceil(totalCount / limit);
+      devices = await Device.findAll({
+        where: { brandId, typeId },
+        limit,
+        offset,
+      });
+      return res.json({ rows: devices, totalPages });
     }
 
     return res.json(devices);
   }
+
+  // ...
 
   async getOne(req, res) {
     const { id } = req.params;
@@ -73,9 +134,9 @@ class DeviceController {
   async delete(req, res) {
     // const {name} = req.body
     const { id } = req.params;
-    const device = await Device.destroy({where: {id}})
-    return res.json(device)
-}
+    const device = await Device.destroy({ where: { id } });
+    return res.json(device);
+  }
 }
 
 module.exports = new DeviceController();
