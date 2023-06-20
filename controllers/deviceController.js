@@ -12,7 +12,7 @@ class DeviceController {
       const devices = await Device.findAll({
         where: {
           name: {
-            [Op.iLike]: `%${query}%`, // Ищем частичное совпадение с именем товара (регистронезависимый поиск)
+            [Op.iLike]: `%${query}%`,
           },
         },
       });
@@ -62,7 +62,8 @@ class DeviceController {
         available,
         img: fileNames,
       });
-      if (info) {
+
+      if (brandId && info) {
         info = JSON.parse(info);
         info.map((i) => {
           DeviceInfo.create({
@@ -78,8 +79,6 @@ class DeviceController {
       return next(ApiError.badRequest(e.message));
     }
   }
-
-  // ...
 
   async getAll(req, res) {
     let { brandId, typeId, limit, page } = req.query;
@@ -119,8 +118,6 @@ class DeviceController {
     return res.json(devices);
   }
 
-  // ...
-
   async getOne(req, res) {
     const { id } = req.params;
     const device = await Device.findOne({
@@ -132,7 +129,6 @@ class DeviceController {
   }
 
   async delete(req, res) {
-    // const {name} = req.body
     const { id } = req.params;
     const device = await Device.destroy({ where: { id } });
     return res.json(device);

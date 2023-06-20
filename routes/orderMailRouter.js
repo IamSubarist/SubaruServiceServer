@@ -3,7 +3,7 @@ const router = Router();
 const nodemailer = require("nodemailer");
 
 // Создайте транспорт для отправки писем (например, SMTP)
-const transporter = nodemailer.createTransport({
+const orderTransporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
     user: "optimistroma927@gmail.com",
@@ -15,14 +15,14 @@ const transporter = nodemailer.createTransport({
 router.post("/send-email", (req, res) => {
   const data = req.body;
 
-  const mailOptions = {
+  const orderMailOptions = {
     from: "optimistroma927@gmail.com",
     to: "optimistroma927@gmail.com",
-    subject: "Новая заявка на консультацию/запись",
-    text: `${data.type}\nИмя: ${data.name}\nТелефон: ${data.phone}\nEmail: ${data.email}`,
+    subject: "Заказ",
+    text: `Товар:${data.deviceId}\nКоличество: ${data.quantity}\nСпособ оплаты: ${data.paymentMethod}\nСпособ доставки: ${data.deliveryMethod}\nАдрес доставки: ${data.address}\nИмя: ${data.name}\nКонтактный телефон: ${data.phone}`,
   };
 
-  transporter.sendMail(mailOptions, (error, info) => {
+  orderTransporter.sendMail(orderMailOptions, (error, info) => {
     if (error) {
       console.error(error);
       res.status(500).json({ error: "Произошла ошибка при отправке письма." });

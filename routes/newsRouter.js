@@ -6,7 +6,6 @@ const path = require("path");
 
 router.post("/add", async (req, res) => {
   try {
-    // Получите данные из запроса
     const { title, subtitle, description } = req.body;
     const { img } = req.files;
     console.log(req.files);
@@ -25,7 +24,6 @@ router.post("/add", async (req, res) => {
       fileNames.push(fileName);
     }
 
-    // Создайте новую новость в базе данных
     const newNews = await News.create({
       img: fileNames,
       title: title,
@@ -33,7 +31,6 @@ router.post("/add", async (req, res) => {
       description: description,
     });
 
-    // Верните новую новость в качестве ответа
     res.json(newNews);
   } catch (error) {
     console.error(error);
@@ -41,7 +38,6 @@ router.post("/add", async (req, res) => {
   }
 });
 
-// Маршрут для получения всех новостей
 router.get("/", async (req, res) => {
   try {
     const news = await News.findAll();
@@ -52,7 +48,6 @@ router.get("/", async (req, res) => {
   }
 });
 
-// Маршрут для получения отдельной новости по ID
 router.get("/:id", async (req, res) => {
   try {
     const news = await News.findByPk(req.params.id);
