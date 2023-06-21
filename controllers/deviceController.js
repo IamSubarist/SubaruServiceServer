@@ -83,7 +83,7 @@ class DeviceController {
   async getAll(req, res) {
     let { brandId, typeId, limit, page } = req.query;
     let devices;
-    limit = limit || 8;
+    limit = limit || 4;
     page = page || 1;
     let offset = page * limit - limit;
     if (!brandId && !typeId) {
